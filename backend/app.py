@@ -4,9 +4,9 @@ import json
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
-from storage import add_expense, calculate_stats, delete_expense, ensure_workbook, list_expenses
+from storage import add_expense, calculate_stats, delete_expense, ensure_workbook, filter_expenses, list_expenses
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +29,26 @@ class ExpenseHandler(SimpleHTTPRequestHandler):
 
         if parsed.path == "/api/stats":
             expenses = list_expenses()
-            self._send_json(calculate_stats(expenses))
+            query = parse_qs(parsed.query)
+
+            try:
+                filtered_expenses = filter_expenses(
+                    expenses,
+                    category=_first_query_value(query, "category"),
+                    date_from=_first_query_value(query, "date_from"),
+                    date_to=_first_query_value(query, "date_to"),
+                )
+            except ValueError as exc:
+                self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            stats = calculate_stats(filtered_expenses)
+            stats["filters"] = {
+                "category": _first_query_value(query, "category"),
+                "date_from": _first_query_value(query, "date_from"),
+                "date_to": _first_query_value(query, "date_to"),
+            }
+            self._send_json(stats)
             return
 
         if parsed.path == "/":
@@ -101,6 +120,11 @@ def run() -> None:
         print("\nShutting down.")
     finally:
         server.server_close()
+
+
+def _first_query_value(query: dict[str, list[str]], key: str) -> str:
+    values = query.get(key, [])
+    return values[0].strip() if values else ""
 
 
 if __name__ == "__main__":

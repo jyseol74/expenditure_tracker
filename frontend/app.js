@@ -1,9 +1,18 @@
 const form = document.querySelector("#expense-form");
 const formStatus = document.querySelector("#form-status");
+const statsFilterForm = document.querySelector("#stats-filter-form");
+const statsCategory = document.querySelector("#stats-category");
+const resetFilterButton = document.querySelector("#reset-filter");
+const filterStatus = document.querySelector("#filter-status");
 const cards = document.querySelector("#cards");
 const monthlyChart = document.querySelector("#monthly-chart");
 const categoryChart = document.querySelector("#category-chart");
 const expensesTable = document.querySelector("#expenses-table");
+const statsFilter = {
+    category: "",
+    date_from: "",
+    date_to: "",
+};
 function currency(value) {
     return new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -23,6 +32,66 @@ async function fetchJSON(url, options) {
         throw new Error(body.error || "Request failed");
     }
     return await response.json();
+}
+function buildStatsQuery() {
+    const params = new URLSearchParams();
+    if (statsFilter.category) {
+        params.set("category", statsFilter.category);
+    }
+    if (statsFilter.date_from) {
+        params.set("date_from", statsFilter.date_from);
+    }
+    if (statsFilter.date_to) {
+        params.set("date_to", statsFilter.date_to);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : "";
+}
+function syncFilterForm(filters) {
+    if (!statsFilterForm) {
+        return;
+    }
+    const categoryInput = statsFilterForm.querySelector('select[name="category"]');
+    const fromInput = statsFilterForm.querySelector('input[name="date_from"]');
+    const toInput = statsFilterForm.querySelector('input[name="date_to"]');
+    if (categoryInput) {
+        categoryInput.value = filters.category;
+    }
+    if (fromInput) {
+        fromInput.value = filters.date_from;
+    }
+    if (toInput) {
+        toInput.value = filters.date_to;
+    }
+}
+function renderFilterStatus(filters, count) {
+    if (!filterStatus) {
+        return;
+    }
+    const parts = [];
+    if (filters.category) {
+        parts.push(`Category: ${filters.category}`);
+    }
+    if (filters.date_from) {
+        parts.push(`From: ${filters.date_from}`);
+    }
+    if (filters.date_to) {
+        parts.push(`To: ${filters.date_to}`);
+    }
+    filterStatus.textContent =
+        parts.length > 0 ? `Filtered stats for ${parts.join(" | ")} (${count} transactions).` : "Showing statistics for all transactions.";
+}
+function populateCategoryOptions(expenses) {
+    if (!statsCategory) {
+        return;
+    }
+    const currentValue = statsCategory.value;
+    const categories = Array.from(new Set(expenses.map((expense) => expense.category))).sort((left, right) => left.localeCompare(right));
+    statsCategory.innerHTML = [
+        `<option value="">All categories</option>`,
+        ...categories.map((category) => `<option value="${category}">${category}</option>`),
+    ].join("");
+    statsCategory.value = categories.includes(currentValue) ? currentValue : statsFilter.category;
 }
 function renderCards(stats) {
     if (!cards) {
@@ -119,8 +188,11 @@ function renderExpenses(expenses) {
 async function refresh() {
     const [expensesResponse, stats] = await Promise.all([
         fetchJSON("/api/expenses"),
-        fetchJSON("/api/stats"),
+        fetchJSON(`/api/stats${buildStatsQuery()}`),
     ]);
+    populateCategoryOptions(expensesResponse.expenses);
+    syncFilterForm(stats.filters);
+    renderFilterStatus(stats.filters, stats.cards.transaction_count);
     renderCards(stats);
     renderMonthlyChart(stats);
     renderCategoryChart(stats);
@@ -177,6 +249,44 @@ async function handleTableClick(event) {
         }
     }
 }
+async function handleFilterSubmit(event) {
+    event.preventDefault();
+    if (!statsFilterForm) {
+        return;
+    }
+    const formData = new FormData(statsFilterForm);
+    statsFilter.category = String(formData.get("category") || "");
+    statsFilter.date_from = String(formData.get("date_from") || "");
+    statsFilter.date_to = String(formData.get("date_to") || "");
+    if (filterStatus) {
+        filterStatus.textContent = "Updating statistics...";
+    }
+    try {
+        await refresh();
+    }
+    catch (error) {
+        if (filterStatus) {
+            filterStatus.textContent = error instanceof Error ? error.message : "Unable to update statistics.";
+        }
+    }
+}
+async function handleFilterReset() {
+    statsFilter.category = "";
+    statsFilter.date_from = "";
+    statsFilter.date_to = "";
+    syncFilterForm(statsFilter);
+    if (filterStatus) {
+        filterStatus.textContent = "Resetting filter...";
+    }
+    try {
+        await refresh();
+    }
+    catch (error) {
+        if (filterStatus) {
+            filterStatus.textContent = error instanceof Error ? error.message : "Unable to reset statistics.";
+        }
+    }
+}
 function initialize() {
     if (!form || !expensesTable) {
         return;
@@ -190,6 +300,12 @@ function initialize() {
     });
     expensesTable.addEventListener("click", (event) => {
         void handleTableClick(event);
+    });
+    statsFilterForm?.addEventListener("submit", (event) => {
+        void handleFilterSubmit(event);
+    });
+    resetFilterButton?.addEventListener("click", () => {
+        void handleFilterReset();
     });
     void refresh();
 }

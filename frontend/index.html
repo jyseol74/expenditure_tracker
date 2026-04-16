@@ -79,6 +79,34 @@
       </section>
 
       <section class="dashboard">
+        <section class="panel">
+          <div class="section-heading">
+            <h2>Statistics Filter</h2>
+            <p>Limit the dashboard to a category or date range without changing the stored transactions.</p>
+          </div>
+          <form id="stats-filter-form" class="stats-filter-form">
+            <label>
+              <span>Category</span>
+              <select id="stats-category" name="category">
+                <option value="">All categories</option>
+              </select>
+            </label>
+            <label>
+              <span>From</span>
+              <input type="date" name="date_from" />
+            </label>
+            <label>
+              <span>To</span>
+              <input type="date" name="date_to" />
+            </label>
+            <div class="filter-actions">
+              <button type="submit">Apply Filter</button>
+              <button id="reset-filter" type="button" class="ghost-button neutral-button">Reset</button>
+            </div>
+          </form>
+          <p id="filter-status" class="status-text"></p>
+        </section>
+
         <div id="cards" class="card-grid"></div>
 
         <div class="chart-grid">

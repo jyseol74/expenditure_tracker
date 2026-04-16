@@ -167,6 +167,36 @@ def calculate_stats(expenses: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def filter_expenses(
+    expenses: list[dict[str, Any]],
+    *,
+    category: str = "",
+    date_from: str = "",
+    date_to: str = "",
+) -> list[dict[str, Any]]:
+    normalized_category = str(category or "").strip().lower()
+    normalized_date_from = _normalize_optional_date(date_from, "date_from")
+    normalized_date_to = _normalize_optional_date(date_to, "date_to")
+
+    if normalized_date_from and normalized_date_to and normalized_date_from > normalized_date_to:
+        raise ValueError("date_from must be on or before date_to")
+
+    filtered: list[dict[str, Any]] = []
+    for expense in expenses:
+        expense_date = expense["date"]
+
+        if normalized_category and expense["category"].strip().lower() != normalized_category:
+            continue
+        if normalized_date_from and expense_date < normalized_date_from:
+            continue
+        if normalized_date_to and expense_date > normalized_date_to:
+            continue
+
+        filtered.append(expense)
+
+    return filtered
+
+
 def _serialize_date(value: Any) -> str:
     if isinstance(value, datetime):
         return value.date().isoformat()
@@ -191,6 +221,17 @@ def _normalize_amount(value: Any) -> float:
     if amount <= 0:
         raise ValueError("amount must be greater than zero")
     return round(amount, 2)
+
+
+def _normalize_optional_date(value: Any, field_name: str) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+
+    try:
+        return datetime.fromisoformat(raw).date().isoformat()
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be in YYYY-MM-DD format") from exc
 
 
 def _require_text(value: Any, field_name: str) -> str:
