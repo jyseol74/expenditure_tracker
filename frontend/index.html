@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expenditure Tracker</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Personal finance sample</p>
+        <h1>Expenditure Tracker</h1>
+        <p class="hero-copy">Track daily spending, store it in Excel, and monitor trends by category and month.</p>
+      </div>
+      <div class="hero-stat">
+        <span>Datastore</span>
+        <strong>Excel Workbook</strong>
+        <small>`data/expenses.xlsx`</small>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel form-panel">
+        <div class="section-heading">
+          <h2>Add Expense</h2>
+          <p>Capture a transaction and update the dashboard instantly.</p>
+        </div>
+        <form id="expense-form" class="expense-form">
+          <label>
+            <span>Date</span>
+            <input type="date" name="date" required />
+          </label>
+          <label>
+            <span>Category</span>
+            <select name="category" required>
+              <option value="">Select</option>
+              <option>Food</option>
+              <option>Transport</option>
+              <option>Housing</option>
+              <option>Utilities</option>
+              <option>Entertainment</option>
+              <option>Shopping</option>
+              <option>Health</option>
+              <option>Education</option>
+              <option>Travel</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label>
+            <span>Description</span>
+            <input type="text" name="description" placeholder="Lunch, taxi, subscription..." required />
+          </label>
+          <label>
+            <span>Amount</span>
+            <input type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required />
+          </label>
+          <label>
+            <span>Payment Method</span>
+            <select name="payment_method" required>
+              <option value="">Select</option>
+              <option>Cash</option>
+              <option>Credit Card</option>
+              <option>Debit Card</option>
+              <option>Bank Transfer</option>
+              <option>Mobile Payment</option>
+            </select>
+          </label>
+          <label class="full-width">
+            <span>Notes</span>
+            <textarea name="notes" rows="3" placeholder="Optional notes"></textarea>
+          </label>
+          <div class="form-actions full-width">
+            <button type="submit">Save Expense</button>
+            <p id="form-status" class="status-text"></p>
+          </div>
+        </form>
+      </section>
+
+      <section class="dashboard">
+        <div id="cards" class="card-grid"></div>
+
+        <div class="chart-grid">
+          <section class="panel">
+            <div class="section-heading">
+              <h2>Monthly Spend</h2>
+              <p>Last six months</p>
+            </div>
+            <div id="monthly-chart" class="bar-chart"></div>
+          </section>
+
+          <section class="panel">
+            <div class="section-heading">
+              <h2>Category Breakdown</h2>
+              <p>Share of total spend</p>
+            </div>
+            <div id="category-chart" class="category-chart"></div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="section-heading">
+            <h2>Recent Transactions</h2>
+            <p>Latest expenses from the workbook</p>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Description</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="expenses-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
