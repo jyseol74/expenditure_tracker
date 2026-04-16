@@ -1,0 +1,275 @@
+openapi: 3.0.3
+info:
+  title: Expenditure Tracker API
+  version: 1.0.0
+  description: |
+    API for managing expense records and filtered expenditure statistics.
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local development server
+
+tags:
+  - name: expenses
+    description: Operations for expense record management
+  - name: stats
+    description: Operations for expenditure statistics and charts
+
+paths:
+  /api/expenses:
+    get:
+      tags:
+        - expenses
+      summary: List expenses
+      operationId: listExpenses
+      responses:
+        "200":
+          description: Expense list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExpenseListResponse"
+    post:
+      tags:
+        - expenses
+      summary: Create expense
+      operationId: createExpense
+      requestBody:
+        required: true
+        description: Expense payload
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExpenseRequest"
+      responses:
+        "201":
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/expenses/{expense_id}:
+    delete:
+      tags:
+        - expenses
+      summary: Delete expense
+      operationId: deleteExpense
+      parameters:
+        - name: expense_id
+          in: path
+          required: true
+          description: Expense identifier
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Expense deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteExpenseResponse"
+        "404":
+          description: Expense not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/stats:
+    get:
+      tags:
+        - stats
+      summary: Get filtered expenditure statistics
+      operationId: getStats
+      parameters:
+        - name: category
+          in: query
+          required: false
+          description: Filter stats by exact category name
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          required: false
+          description: Inclusive start date in YYYY-MM-DD format
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          required: false
+          description: Inclusive end date in YYYY-MM-DD format
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Statistics payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+        "400":
+          description: Invalid filter values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    Expense:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+          format: float
+        payment_method:
+          type: string
+        notes:
+          type: string
+      required:
+        - id
+        - date
+        - category
+        - description
+        - amount
+        - payment_method
+        - notes
+
+    CreateExpenseRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        category:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+          format: float
+        payment_method:
+          type: string
+        notes:
+          type: string
+      required:
+        - date
+        - category
+        - description
+        - amount
+        - payment_method
+
+    ExpenseListResponse:
+      type: object
+      properties:
+        expenses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Expense"
+      required:
+        - expenses
+
+    DeleteExpenseResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+      required:
+        - deleted
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    StatsCards:
+      type: object
+      properties:
+        total_spend:
+          type: number
+          format: float
+        current_month_total:
+          type: number
+          format: float
+        average_transaction:
+          type: number
+          format: float
+        top_category:
+          type: string
+        transaction_count:
+          type: integer
+          format: int32
+      required:
+        - total_spend
+        - current_month_total
+        - average_transaction
+        - top_category
+        - transaction_count
+
+    SeriesItem:
+      type: object
+      properties:
+        label:
+          type: string
+        total:
+          type: number
+          format: float
+      required:
+        - label
+        - total
+
+    StatsFilters:
+      type: object
+      properties:
+        category:
+          type: string
+        date_from:
+          type: string
+        date_to:
+          type: string
+      required:
+        - category
+        - date_from
+        - date_to
+
+    StatsResponse:
+      type: object
+      properties:
+        cards:
+          $ref: "#/components/schemas/StatsCards"
+        monthly_series:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeriesItem"
+        category_series:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeriesItem"
+        filters:
+          $ref: "#/components/schemas/StatsFilters"
+      required:
+        - cards
+        - monthly_series
+        - category_series
+        - filters
